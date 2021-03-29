@@ -175,12 +175,15 @@ public key embedded in the signature. While this proves the signed bytes have
 not been modified since the file was signed, it doesn't prove *who* signed
 them.
 
-`simple-signer.py <class> -verify <verification-filename> <filename>`
+`simple-signer.py <class> -verify <verification> <filename>`
 
 Where `<class>` is `-auto`, `-json`, `-zip`, or `-binary` to select the
-signing backend, and `<verification-filename>` is a *private* key, *public*
+signing backend, and `<verification>` is a *private* key, *public*
 key, or *fingerprint* filename; a *fingerprint* literal (beware escape
 characters), or a *-* to use the key embedded in the signature.
+
+If verification success, the output will also show you the metadata passed
+at signing.
 
 Ideally, the verifying user would retrieve the correct public key or
 fingerprint through a separate channel from the file; such as a key-server,
