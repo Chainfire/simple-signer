@@ -1,0 +1,16 @@
+.idea/
+__pycache__/
+env/
+tests/
+
+id_rsa*
+id_ed25519*
+*.enc
+*.key
+*.pkey
+*.cert
+*.crt
+*.RSA
+*.p7
+*.p8
+*.p12
