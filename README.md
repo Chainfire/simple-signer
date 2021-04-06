@@ -28,6 +28,10 @@ This code is released under the [MIT license](./LICENSE).
 
 I wrote this. Mind the dragons.
 
+## Magic
+
+File format magic bytes is "CFSS"
+
 ## Requirements
 
 This requires recent a OpenSSL and Python 3.x.
