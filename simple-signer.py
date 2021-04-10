@@ -59,13 +59,15 @@ def usage():
 
 
 def load_json_metadata(metadata: Optional[str]) -> Optional[str]:
-    if metadata is None:
-        return None
-    if os.path.isfile(metadata):
-        with open(metadata, "r") as f:
-            return json.load(f)
-    else:
-        return json.loads(metadata)
+    data = {}
+    if metadata is not None:
+        if os.path.isfile(metadata):
+            with open(metadata, "r") as f:
+                data = json.load(f)
+        else:
+            data = json.loads(metadata)
+    data['signer-sources'] = 'https://github.com/Chainfire/simple-signer/'
+    return data
 
 
 def load_key(filename: str, private: bool=False, password: Optional[bytes]=None, extensive: bool=False) -> Union[RSAPrivateKey, RSAPublicKey, Ed25519PrivateKey, Ed25519PublicKey]:
@@ -242,7 +244,7 @@ def main() -> Optional[bool]:
     if signer_class is not None and (do_sign or do_verify):
         try:
             if do_sign:
-                print_sign_result(signer_class(load_key(sys.argv[3], private=True, extensive=False)).sign(sys.argv[4], sys.argv[5], load_json_metadata(sys.argv[6]) if len(sys.argv) >= 7 else None))
+                print_sign_result(signer_class(load_key(sys.argv[3], private=True, extensive=False)).sign(sys.argv[4], sys.argv[5], load_json_metadata(sys.argv[6] if len(sys.argv) >= 7 else None)))
                 return True
             elif do_verify:
                 key = None
