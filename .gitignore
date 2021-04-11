@@ -3,8 +3,7 @@ __pycache__/
 env/
 tests/
 
-id_rsa*
-id_ed25519*
+id_*
 *.enc
 *.key
 *.pkey
@@ -14,3 +13,4 @@ id_ed25519*
 *.p7
 *.p8
 *.p12
+*.pem
