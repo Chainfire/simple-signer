@@ -139,4 +139,6 @@ class SimpleBinarySigner(SimpleSigner):
             count, valid = verify(public_key, FileBlockGenerator(infilename, 0, binary_length + metadata_length + public_key_length).generator(), provided_signature)
             if count != binary_length + metadata_length + public_key_length:
                 raise InternalException("count != binary_length + metadata_length + public_key_length")
+            if not valid:
+                raise SignatureVerificationFailed()
             return SimpleSigner.VerifyResult(self.mode(), count, provided_signature_b64, PublicKeyHelper.from_string(public_key_str), self._public_key is not None or self._fingerprint is not None, metadata)
