@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_cer
 from cryptography.x509 import load_der_x509_certificate, load_pem_x509_certificate
 
 from simplesigner import *
-from simplesigner.util import minify_json, KEY_ALL_TYPES, is_public_key, is_private_key
+from simplesigner.util import minify_json, KEY_ALL_TYPES, is_public_key, is_private_key, is_supported_key, is_ethereum_key
 
 VERSION = "1.0"
 
@@ -215,6 +215,16 @@ def print_verify_result(result: SimpleSigner.VerifyResult):
 
 def print_public_key_info(filename: str):
     key = load_key(filename, private=False, extensive=False)
+    keyclass = str(type(key))
+    if 'RSA' in keyclass:
+        keyclass = 'RSA'
+    elif 'Ed25519' in keyclass:
+        keyclass = 'Ed25519'
+    elif 'EllipticCurve' in keyclass:
+        keyclass = 'EC/' + key.curve.name
+    else:
+        keyclass = "Unknown"
+    print("Key type: %s%s" % (keyclass, " (NOT SUPPORTED)" if not is_supported_key(key) else (" (Ethereum)" if is_ethereum_key(key) else "")))
     print("Public key: %s" % PublicKeyHelper.to_string(key, True))
     print("Public key fingerprint: %s" % PublicKeyHelper.fingerprint(key, True))
 

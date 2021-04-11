@@ -25,8 +25,15 @@ def check_union(obj: Any, union: Any):
     return False
 
 
+def is_ethereum_key(obj: Any):
+    return (isinstance(obj, EllipticCurvePrivateKey) or isinstance(obj, EllipticCurvePublicKey)) and obj.curve.name == 'secp256k1'
+
+
 def is_supported_key(obj: Any):
-    return check_union(obj, KEY_ALL_TYPES)
+    ret = check_union(obj, KEY_ALL_TYPES)
+    if ret and (isinstance(obj, EllipticCurvePrivateKey) or isinstance(obj, EllipticCurvePublicKey)):
+        ret = is_ethereum_key(obj)
+    return ret
 
 
 def is_private_key(obj: Any):
@@ -35,10 +42,6 @@ def is_private_key(obj: Any):
 
 def is_public_key(obj: Any):
     return check_union(obj, KEY_PUBLIC_TYPES)
-
-
-def is_ethereum_key(obj: Any):
-    return (isinstance(obj, EllipticCurvePrivateKey) or isinstance(obj, EllipticCurvePublicKey)) and obj.curve.name == 'secp256k1'
 
 
 def minify_json(obj: Any) -> str:
