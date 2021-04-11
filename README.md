@@ -6,8 +6,8 @@ very best thing one can do in the world of encryption: I rolled my
 own.
 
 *Simple Signer* is a small tool (and module) to sign files with
-RSA or Ed25519 private keys, and verify them with the public keys
-or a fingerprint thereof.
+RSA, Ed25519 or EC/secp256k1 private keys, and verify them with the 
+public keys or a fingerprint thereof.
 
 JSON metadata can be added to the signature and is returned on
 verification. The tool uses different signature formats based on
@@ -19,6 +19,12 @@ but a `-convert` option is provided that can read many formats,
 so most of you won't have to spend hours Googling on the exactly
 right OpenSSL commands to convert your keys. Password-protected
 private keys are supported.
+
+Note that for EC (Elliptic Curve) only secp256k1 is supported, for
+Ethereum-specific usage (see the Ethereum section). While the code
+may *mostly* work for other curves, they are neither supported nor
+tested, and may generate unexpected results (if any). You probably
+want to be using Ed25519 anyway...
 
 ## License
 
@@ -34,11 +40,14 @@ File format magic bytes is "CFSS"
 
 ## Requirements
 
-This requires recent a OpenSSL and Python 3.x.
+This requires a recent OpenSSL and Python 3.x.
 
-I only needed to pip `cryptography` for the main code and `bcrypt` for 
-password support after that. A `requirements.txt` is included based on
-a fresh a virtualenv I tested the tool with.
+I only needed to pip install `cryptography`, `bcrypt` and `pysha3`. Note
+that if you skip `bcrypt` things will appear to work, until you require
+a password somewhere, which will then *silently* fail.
+
+A `requirements.txt` is included based on a fresh a virtualenv I tested
+the tool with:
 
 `pip install -r requirements`
 
@@ -65,6 +74,8 @@ is in their source files.
 
 Note that the final signing and verification code comes straight from
 the `cryptography` docs, I assume they know what they're doing.
+
+Signing is based on a SHA256 hash of the data provided by the backends.
 
 ### JSON
 
@@ -166,7 +177,8 @@ literal string (beware escape characters).
 
 If signing succeeds, the output will also show you the public key fingerprint
 you can use elsewhere. Note that these fingerprints are made to match those
-`ssh-keygen` produces. You can also dump the fingerprint without signing
+`ssh-keygen` produces for RSA and Ed25519 keys, and produce an Ethereum
+address for EC/secp256k1. You can also dump the fingerprint without signing
 anything by using the `-info` option.
 
 ### Verification
@@ -234,6 +246,68 @@ and `SignatureVerificationFailed` (which tells you the public key or
 fingerprint matched - if you provided one - but the content does not) from
 `simplesigner.exceptions`. 
 
+## Ethereum
+
+EC/secp256k1 support is included specifically for usage with the Ethereum
+(and similar) blockchain only.
+
+Ethereum private keys are usually in 0x0123456789abcdef format (you can get
+this from your MetaMask), which we cannot use directly; we need to convert
+it to PKCS#8 first.
+
+As an example I'm using the private key
+`0x93ae051acb39ff47063f7f7c498d79e41079a286b676ac09bae6bf69d89c84b9`
+here (which I just generated with OpenSSL), which translates to address
+`0x399C1e822836B4275fA02000E2ADC33761888D90`:
+
+```
+echo "0x93ae051acb39ff47063f7f7c498d79e41079a286b676ac09bae6bf69d89c84b9" > id_eth.raw
+simple-signer.py -convert -private id_eth.raw id_eth.key
+```
+
+Then signing and verifying files is the same as with any other key:
+
+```
+simple-signer.py -auto -sign id_eth.key input.dat signed.dat
+simple-signer.py -auto -verify 0x399C1e822836B4275fA02000E2ADC33761888D90 signed.dat
+```
+
+We could've used a public key file here for verification, but because
+this tool supports fingerprints and the produced EC/secp256k1 fingerprint
+is (intentionally) the same as the Ethereum address belonging to the
+private key, we can verify directly using the address! *Neat*. 
+
+Note that the signature scheme itself is not compatible with any known
+standard library (such as Web3) functionality. This tool uses SHA256
+internally instead of Keccak256, and its file parsing and metadata
+functionality is entirely custom; the compatibility starts and ends with
+being able to use the same type of private/public key as the Ethereum
+network, and the fingerprint producing an Ethereum address.
+
+## Cheat sheet
+
+Generate RSA private key of BITS bits (2048, 3072, 4096, etc):
+
+`openssl genrsa BITS -noout | openssl pkcs8 -topk8 -outform pem > mykey.key`
+
+Generate Ed25519 private key:
+
+`openssl genpkey -algorithm Ed25519 | openssl pkcs8 -topk8 -outform pem > mykey.key`
+
+Generate secp256k1 private key:
+
+`openssl ecparam -name secp256k1 -genkey -noout | openssl pkcs8 -topk8 -outform pem > mykey.key`
+
+Generate public key from private key:
+
+`simple-signer.py -convert -public mykey.key mykey.pub`
+
+Get Ethereum private key from PKCS#8:
+
+`openssl ec -text -noout < mykey.key`
+
+Just concat all the the hexadecimals from the *priv* section, and prepend with *0x*
+
 ## Quantum computing
 
 Both RSA and Ed25519 based signatures will ultimately be vulnerable to
@@ -245,12 +319,12 @@ Ed25519 prevents a few other attacks that RSA is vulnerable to, and
 its keys are significantly smaller. Which is to the most benefit to you
 is for you to decide.
 
-How long will it take for RSA-7680 or Ed25519-384 to be broken to the
+How long will it take for RSA-3072 or Ed25519 (256) to be broken to the
 point that anyone with USD $100K in the bank can do it? It may be as
 little as half a decade, or it could be a factor of that. Predicting
 the future is hard.
 
-If using fingerprint-based verification, SHA256 being broken would also
+SHA256 being broken (as well as Keccak256 for Ethereum) would also
 be a possible attack vector.
 
 There's not really a good standardized (and battle-tested) post-quantum
@@ -261,3 +335,6 @@ Using only fingerprints of the public key rather than the public key in
 full as is done in some systems can keep things significantly safer, but
 does not fit the use case I'm building this for - the public key needs
 to be public anyway.
+
+(For the sake of simplicity, you can consider EC/secp256k1 as Ed25519
+here)

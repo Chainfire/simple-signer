@@ -3,9 +3,7 @@ import os
 import json
 from typing import Optional, Union
 
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
-
+from cryptography.hazmat.primitives.asymmetric.ec import derive_private_key, SECP256K1
 from cryptography.hazmat.primitives.serialization import load_der_private_key, load_der_public_key
 from cryptography.hazmat.primitives.serialization.ssh import load_ssh_private_key, load_ssh_public_key
 from cryptography.hazmat.primitives.serialization.pkcs7 import load_der_pkcs7_certificates, load_pem_pkcs7_certificates
@@ -13,7 +11,7 @@ from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_cer
 from cryptography.x509 import load_der_x509_certificate, load_pem_x509_certificate
 
 from simplesigner import *
-from simplesigner.util import minify_json
+from simplesigner.util import minify_json, KEY_ALL_TYPES, is_public_key, is_private_key
 
 VERSION = "1.0"
 
@@ -70,7 +68,7 @@ def load_json_metadata(metadata: Optional[str]) -> Optional[str]:
     return data
 
 
-def load_key(filename: str, private: bool=False, password: Optional[bytes]=None, extensive: bool=False) -> Union[RSAPrivateKey, RSAPublicKey, Ed25519PrivateKey, Ed25519PublicKey]:
+def load_key(filename: str, private: bool=False, password: Optional[bytes]=None, extensive: bool=False) -> KEY_ALL_TYPES:
     key = None
 
     if password is None and not extensive:
@@ -97,6 +95,15 @@ def load_key(filename: str, private: bool=False, password: Optional[bytes]=None,
     if extensive and not key:
         with open(filename, 'rb') as f:
             data = f.read()
+
+        # Ethereum Private Key
+        if not key:
+            try:
+                ascii = data.decode('utf-8').strip()
+                if ascii[0:2] == '0x' and len(ascii) == 66:
+                    key = derive_private_key(int(ascii, 0), SECP256K1())
+            except:
+                pass
 
         # DER Public Key
         if not key and not private:
@@ -166,18 +173,11 @@ def load_key(filename: str, private: bool=False, password: Optional[bytes]=None,
                 key = cert.public_key()
 
     if key:
-        if private and isinstance(key, RSAPrivateKey):
+        if private and is_private_key(key):
             return key
-        if not private and isinstance(key, RSAPrivateKey):
+        elif not private and is_private_key(key):
             return key.public_key()
-        elif isinstance(key, RSAPublicKey):
-            return key
-
-        if private and isinstance(key, Ed25519PrivateKey):
-            return key
-        if not private and isinstance(key, Ed25519PrivateKey):
-            return key.public_key()
-        elif isinstance(key, Ed25519PublicKey):
+        elif not private and is_public_key(key):
             return key
 
     raise FileException("Could not read key")
@@ -298,11 +298,11 @@ def main() -> Optional[bool]:
                 PublicKeyHelper.to_file(key, sys.argv[4])
                 print("Converted")
                 return True
-            except:
+            except BaseException as e:
                 try:
                     print("Could not read key, try a password ?")
                     password = input("Password: ").encode('utf-8')
-                    key = load_key(sys.argv[3], private=True, extensive=True, password=password)
+                    key = load_key(sys.argv[3], private=False, extensive=True, password=password)
                     PublicKeyHelper.to_file(key, sys.argv[4])
                     print("Converted")
                     return True

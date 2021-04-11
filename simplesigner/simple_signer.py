@@ -1,18 +1,15 @@
-from typing import Optional, Union, Any
-
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+from typing import Optional, Any
 
 from .exceptions import *
-from .key_helpers import PublicKeyHelper
+from .util import KEY_PRIVATE_TYPES, KEY_PUBLIC_TYPES, KEY_ALL_TYPES, is_private_key, is_public_key
 
 
 class SimpleSigner:
-    VERSION = 1
+    VERSION = 2
     MAGIC = 'CFSS'
 
     class SignResult:
-        def __init__(self, mode: str, bytes_signed: int, signature: str, public_key: Union[RSAPublicKey, Ed25519PublicKey], metadata: Optional[Any]):
+        def __init__(self, mode: str, bytes_signed: int, signature: str, public_key: KEY_PUBLIC_TYPES, metadata: Optional[Any]):
             self.mode = mode
             """Signer mode"""
 
@@ -29,7 +26,7 @@ class SimpleSigner:
             """Metadata included"""
 
     class VerifyResult:
-        def __init__(self, mode: str, bytes_verified: int, signature: str, public_key: Union[RSAPublicKey, Ed25519PublicKey], public_key_verified: bool, metadata: Optional[Any]):
+        def __init__(self, mode: str, bytes_verified: int, signature: str, public_key: KEY_PUBLIC_TYPES, public_key_verified: bool, metadata: Optional[Any]):
             self.mode = mode
             """Signer mode"""
 
@@ -53,7 +50,7 @@ class SimpleSigner:
             self.metadata = metadata
             """Metadata included"""
 
-    def __init__(self, key_or_fingerprint: Optional[Union[RSAPrivateKey, Ed25519PrivateKey, RSAPublicKey, Ed25519PublicKey]]):
+    def __init__(self, key_or_fingerprint: Optional[KEY_ALL_TYPES]):
         """
         An xxxPrivateKey is required to sign. To verify properly an xxxPublicKey or fingerprint str needs to be provided;
         if omitted, the public key stored in the signature is used for verification, which only proves the checked
@@ -62,29 +59,21 @@ class SimpleSigner:
         If an xxxPrivateKey is provided, it's public part is also loaded automatically, so passing an xxxPrivateKey
         allows you to both sign and properly verify.
 
-        :param key_or_fingerprint: RSAPrivateKey, Ed25519PrivateKey, RSAPublicKey, Ed25519PublicKey, str (fingerprint), or None
+        :param key_or_fingerprint: RSAPrivateKey, Ed25519PrivateKey, EllipticCurvePrivateKey, RSAPublicKey, Ed25519PublicKey, EllipticCurvePublicKey, str (fingerprint), or None
         """
         if key_or_fingerprint is None:
-            self._private_key = None  # type: Optional[Union[RSAPrivateKey, Ed25519PrivateKey]]
-            self._public_key = None  # type: Optional[Union[RSAPublicKey, Ed25519PublicKey]]
+            self._private_key = None  # type: Optional[KEY_PRIVATE_TYPES]
+            self._public_key = None  # type: Optional[KEY_PUBLIC_TYPES]
             self._fingerprint = None  # type: Optional[str]
         elif isinstance(key_or_fingerprint, str):
             self._private_key = None
             self._public_key = None
             self._fingerprint = key_or_fingerprint
-        elif isinstance(key_or_fingerprint, RSAPrivateKey):
+        elif is_private_key(key_or_fingerprint):
             self._private_key = key_or_fingerprint
             self._public_key = key_or_fingerprint.public_key()
             self._fingerprint = None
-        elif isinstance(key_or_fingerprint, Ed25519PrivateKey):
-            self._private_key = key_or_fingerprint
-            self._public_key = key_or_fingerprint.public_key()
-            self._fingerprint = None
-        elif isinstance(key_or_fingerprint, RSAPublicKey):
-            self._private_key = None
-            self._public_key = key_or_fingerprint
-            self._fingerprint = None
-        elif isinstance(key_or_fingerprint, Ed25519PublicKey):
+        elif is_public_key(key_or_fingerprint):
             self._private_key = None
             self._public_key = key_or_fingerprint
             self._fingerprint = None

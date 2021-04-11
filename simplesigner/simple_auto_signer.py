@@ -1,16 +1,15 @@
-from typing import Optional, Any, Union
-
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
+from typing import Optional, Any
 
 from .exceptions import *
 from .simple_signer import SimpleSigner
 from .simple_json_signer import SimpleJsonSigner
 from .simple_zip_signer import SimpleZipSigner
 from .simple_binary_signer import SimpleBinarySigner
+from .util import KEY_ALL_TYPES
 
 
 class SimpleAutoSigner(SimpleSigner):
-    def __init__(self, key_or_fingerprint: Optional[Union[RSAPrivateKey, RSAPublicKey]]):
+    def __init__(self, key_or_fingerprint: Optional[KEY_ALL_TYPES]):
         super().__init__(key_or_fingerprint)
         classes = [SimpleJsonSigner, SimpleZipSigner, SimpleBinarySigner]
         self._signers = [signer_class(key_or_fingerprint) for signer_class in classes]
