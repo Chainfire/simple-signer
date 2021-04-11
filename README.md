@@ -145,9 +145,9 @@ if you know beforehand.
 
 Run `simple-signer.py` for the full command structure.
 
-As stated in the introduction, both RSA and Ed25519 keys are supported. Be
-sure to use a responsible number of bits for your keys. Also see my note
-about quantum computing below.
+As stated in the introduction, RSA, Ed25519, and EC/secp256k1 keys are
+supported. Be sure to use a responsible number of bits for your keys (if
+applicable). Also see my note about quantum computing below.
 
 ### Converting keys
 
@@ -284,7 +284,7 @@ functionality is entirely custom; the compatibility starts and ends with
 being able to use the same type of private/public key as the Ethereum
 network, and the fingerprint producing an Ethereum address.
 
-## Cheat sheet
+## Keys-from-scratch cheat sheet
 
 Generate RSA private key of BITS bits (2048, 3072, 4096, etc):
 
