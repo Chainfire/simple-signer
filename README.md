@@ -21,7 +21,7 @@ right OpenSSL commands to convert your keys. Password-protected
 private keys are supported.
 
 Note that for EC (Elliptic Curve) only secp256k1 is supported, for
-Ethereum-specific usage (see the Ethereum section). While the code
+Ethereum-specific usage (see the *Ethereum* section). While the code
 may *mostly* work for other curves, they are neither supported nor
 tested, and may generate unexpected results (if any). You probably
 want to be using Ed25519 anyway...
@@ -307,6 +307,24 @@ Get Ethereum private key from PKCS#8:
 `openssl ec -text -noout < mykey.key`
 
 Just concat all the the hexadecimals from the *priv* section, and prepend with *0x*
+
+## Public key exposure
+
+Once you make signed files public, your public key is exposed. While that
+is basically the point of public keys, it is not entirely without risk.
+
+If the algorithm is cracked (see the *Quantum computing* section) or
+your private key generation flawed, your private key may be derived and an
+attacker may forge your signature.
+
+You should limit the use of private keys for which the public keys are
+exposed. If possible, do not re-use the same keys between projects (or
+even files).
+
+For Ethereum, the paranoid should not store funds or tokens in the address
+corresponding to the private key used for signing. Of course it should be
+noted that every transaction or signing performed by that address leads
+to the same exposure.  
 
 ## Quantum computing
 
