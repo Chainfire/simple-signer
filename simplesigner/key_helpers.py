@@ -85,7 +85,7 @@ class PublicKeyHelper:
     @staticmethod
     def to_bytes(key: KEY_PUBLIC_TYPES, strip: bool=False, ssh: bool=False, point: bool=False) -> bytes:
         b = key.public_bytes(Encoding.OpenSSH if ssh else (Encoding.X962 if point else Encoding.PEM), PublicFormat.OpenSSH if ssh else (PublicFormat.UncompressedPoint if point else PublicFormat.SubjectPublicKeyInfo))
-        if strip:
+        if strip and not point:
             b = b.\
                 replace(b'-----BEGIN PUBLIC KEY-----', b'').\
                 replace(b'-----END PUBLIC KEY-----', b'').\
